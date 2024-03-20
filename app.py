@@ -8,7 +8,7 @@ st.title("Stock Guru Chatbot")
 def fetch_news():
     url = "https://api.marketaux.com/v1/news/all"
     params = {
-        "symbols": "AAPL",
+        "symbols": "AAPL,IBM",
         "filter_entities": True,
         "api_token": "WOirwkrrIROs8TFhQcuzyurRdBaxeXrAcDCxuppp"
     }
