@@ -1,68 +1,54 @@
 import streamlit as st
-import pandas as pd
 import requests
-import json
-from datetime import date
-import yfinance as yf
-from transformers import pipeline
+from textblob import TextBlob
 
-# Sentiment Analysis API
-sentiment_analysis = pipeline('sentiment-analysis')
+st.title("Stock Guru Chatbot")
 
-# Set up Streamlit app
-st.set_page_config(page_title="Stock Guru", layout="wide")
+# Function to fetch news data from the API
+def fetch_news():
+    url = "https://api.marketaux.com/v1/news/all"
+    params = {
+        "symbols": "AAPL,TSLA",
+        "filter_entities": True,
+        "api_token": "WOirwkrrIROs8TFhQcuzyurRdBaxeXrAcDCxuppp"
+    }
+    response = requests.get(url, params=params)
 
-# Landing page
-st.title("Stock Guru - Conversational Recommender System")
-st.write("Welcome to Stock Guru, your personal investment assistant!")
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("data", [])
+    else:
+        st.error("Failed to fetch news data.")
+        return []
 
-# Get user input
-user_input = st.text_input("How can I assist you today?", "")
+# Function to perform sentiment analysis
+def analyze_sentiment(text):
+    blob = TextBlob(text)
+    sentiment_score = blob.sentiment.polarity
+    if sentiment_score > 0:
+        return "Positive"
+    elif sentiment_score < 0:
+        return "Negative"
+    else:
+        return "Neutral"
 
-if user_input:
-    # Sentiment analysis on user input
-    sentiment_score = sentiment_analysis(user_input)[0]['score']
-    sentiment_label = sentiment_analysis(user_input)[0]['label']
+# Fetch news data from the API
+news_data = fetch_news()
 
-    # Call financial news API
-    news_api_url = "https://api.marketaux.com/v1/news/all?symbols=AAPL,TSLA&filter_entities=true&api_token=WOirwkrrIROs8TFhQcuzyurRdBaxeXrAcDCxuppp"  # Replace with your API URL
-    news_response = requests.get(news_api_url)
-    news_data = json.loads(news_response.text)
+# Display news data and sentiment analysis in the Streamlit app
+if news_data:
+    for news_item in news_data:
+        st.write(f"Title: {news_item['title']}")
+        st.write(f"Description: {news_item['description']}")
+        st.write(f"URL: {news_item['url']}")
+        st.image(news_item['image_url'], caption="Image", use_column_width=True)
+        
+        # Perform sentiment analysis
+        sentiment = analyze_sentiment(news_item['description'])
+        st.write(f"Sentiment: {sentiment}")
+        
+        st.write("---")
+else:
+    st.write("No news data available.")
 
-    # Extract news articles from the API response
-    news_articles = news_data["data"]
-
-    # Sentiment analysis on news articles
-    news_sentiments = []
-    for article in news_articles:
-        description = article['description']
-        news_sentiments.append(sentiment_analysis(description)[0])
-
-    # Get stock data from Yahoo Finance API
-    today = date.today()
-    start_date = today.replace(year=today.year - 1)
-    stock_tickers = [entity['symbol'] for article in news_articles for entity in article['entities']]
-    stock_data = {}
-    for ticker in stock_tickers:
-        stock_data[ticker] = yf.download(ticker, start=start_date, end=today)
-
-    # Display user input sentiment
-    st.write(f"Sentiment: {sentiment_label.capitalize()} ({sentiment_score:.2f})")
-
-    # Display news sentiments
-    st.subheader("Market Sentiment Analysis")
-    for sentiment, article in zip(news_sentiments, news_articles):
-        st.write(f"Article Sentiment: {sentiment['label'].capitalize()} ({sentiment['score']:.2f})")
-        st.write(f"Article Description: {article['description']}")
-
-    # Display stock data and recommendations
-    for ticker, data in stock_data.items():
-        st.subheader(f"{ticker} Stock Data")
-        st.line_chart(data["Close"])
-
-        # Implement your recommendation logic here
-        # ...
-
-        # Display recommendations
-        st.subheader("Recommendations")
-        st.write(f"Based on your input and market data, we recommend for {ticker}...")
+# Continue with the rest of your Streamlit app code...
