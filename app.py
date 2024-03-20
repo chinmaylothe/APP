@@ -5,10 +5,10 @@ from textblob import TextBlob
 st.title("Stock Guru Chatbot")
 
 # Function to fetch news data from the API
-def fetch_news():
+def fetch_news(symbols):
     url = "https://api.marketaux.com/v1/news/all"
     params = {
-        "symbols": "AAPL,IBM",
+        "symbols": symbols,
         "filter_entities": True,
         "api_token": "WOirwkrrIROs8TFhQcuzyurRdBaxeXrAcDCxuppp"
     }
@@ -32,8 +32,11 @@ def analyze_sentiment(text):
     else:
         return "Neutral"
 
-# Fetch news data from the API
-news_data = fetch_news()
+# Get symbols from user input
+symbols = st.text_input("Enter symbols (comma-separated):", value="AAPL,IBM")
+
+# Fetch news data based on user input symbols
+news_data = fetch_news(symbols)
 
 # Display news data and sentiment analysis in the Streamlit app
 if news_data:
